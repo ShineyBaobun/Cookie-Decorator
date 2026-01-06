@@ -71,6 +71,14 @@ class Topping(Ingredient):
             surface.blit(self.darken,self.darken_rect)
             surface.blit(self.lock, self.lock_rect)
 
+Core_Ingredient = {"order": Core("assets/order.png",0,0), 
+               "butter" : Core("assets/buttertray.png",342,2,[[550,500],[800,400], [1050,500], [925,600], [675,600]]),
+               "eggs" : Core("assets/eggtray.png",810,0,2),
+               "flour" : Core("assets/flour.png",1275,13,500),
+               "sugar" : Core("assets/sugar.png",1275,320,300),
+               "milk" : Core("assets/milk.png",1275,620,2)
+        }
+
 Add_Ins = {"food coloring": Topping("assets/coloring.png",0,310), 
            "chocolate chips": Topping("assets/chocchips.jpg",170,310,"assets/ChocChipAdd.PNG"), 
            "sprinkles": Topping("assets/sprinkles.jpg",0,460,"assets/SprinkleAdd.PNG"), 
@@ -245,7 +253,7 @@ def homescreen(levelbutton, shop, play, tut, games, miniimage, minirect, exit,le
         for name, thislevel in leveldict.items():
             thislevel.draw(screen)
 
-def addlevel(leveldict,completed,adds,tops):
+def addlevel(leveldict,completed,adds,tops,core_list):
     if len(completed) <= len(leveldict) and len(leveldict) > 0:
         leveldict[len(completed)] = level(len(completed))
         Ingredients = {"order": Core(None,0,0), 
@@ -287,7 +295,7 @@ def addlevel(leveldict,completed,adds,tops):
         
         Colors = ["red", "green", "blue"]
         
-        leveldict[len(completed)].order = Ingredients["order"]
+        leveldict[len(completed)].order = core_list["order"]
         for name, item in adds.items():
             if randint(0,1) == 1:
                 if item.owned and name != "food coloring":
@@ -871,12 +879,13 @@ def ovenclicking(games,played,startshow,toppings,start,playing,next_button):
     return startshow,toppings,playing
 
 def go_to_finished(next_button, games, completed_list, level_list, current, played,add,top,topping,oven):
-    if next_button.is_clicked(event) and not games["finished_screen"]:
+    if next_button.is_clicked(event) and not games["finished_screen"] and not games["clicked_button"]:
         games["finished_screen"] = True
-    if next_button.is_clicked(event) and games["finished_screen"]:
+        games["clicked_button"] = True
+    if next_button.is_clicked(event) and games["finished_screen"] and not games["clicked_button"]:
         games["finished_screen"] = False
         completed_list[len(completed_list)] = current
-        level_list = addlevel(level_list,completed_list,add,top)
+        level_list = addlevel(level_list,completed_list,add,top,Core_Ingredient)
         current = level_list[len(completed_list)]
         topping = False
         played["oven_played"] = False
@@ -891,6 +900,9 @@ def go_to_finished(next_button, games, completed_list, level_list, current, play
             item.added = False
         for name,item in top.items():
             item.added = False
+    if next_button.is_clicked_up(event) and games["clicked_button"]:
+        games["clicked_button"] = True
+
     return topping,oven,current,level_list
 
 
@@ -985,7 +997,7 @@ while running:
         screen.blit(background, (0,0))
         next.draw(screen)
         HomeButton(home, Games,toppings_time)
-        for name, item in current_level.core_ingredients.items():
+        for name, item in Core_Ingredient.items():
             item.draw(screen)
 
         for name, item in Add_Ins.items():
@@ -1037,7 +1049,7 @@ while running:
                 item.draw(screen)
                 item.not_owned(screen)
             HomeButton(home, Games,toppings_time)
-            toppings_time,oven_playing,current_level,levels = go_to_finished(next, Games, completed_levels, current_level,levels, Played,Add_Ins,Toppings,toppings_time,oven_playing)
+            toppings_time,oven_playing,current_level,levels = go_to_finished(next, Games, completed_levels, levels, current_level, Played,Add_Ins,Toppings,toppings_time,oven_playing)
             if Games["finished_screen"]:
                 Games["show_minigame"] == True
 
