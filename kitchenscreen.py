@@ -854,10 +854,10 @@ def ovendraw(image,image_rect,r,g,b,w,startshow,start,start_rect,stop,stop_rect,
 def ovenclicking(games,played,startshow,toppings,start,playing,next_button):
     if event.type == pygame.MOUSEBUTTONDOWN:
         mouse_pos = event.pos
-        if next_button.is_clicked(event) and not played["oven_played"]:
+        if next_button.is_clicked(event) and not played["oven_played"] and not games["clicked_button"]:
             games["oven_game"] = True
             startshow = True
-        elif next_button.is_clicked(event) and played["oven_played"]:
+        elif next_button.is_clicked(event) and played["oven_played"] and not games["clicked_button"]:
             toppings = True
             games["oven_game"] = False
 
@@ -971,8 +971,8 @@ while running:
                 not_owned_mini = addclicking(Add_Ins,current_level,toppings_time, Games,not_owned_mini,Color_Buttons)
 
             #if ingredients have been clicked then minigame gets shown
-            for name, item in current_level.core_ingredients.items():
-                if item.clicked(event) and not Games["show_minigame"] and not Games["clicked_button"]:
+            for name, item in Core_Ingredient.items():
+                if item.clicked(event) and not Games["show_minigame"] and not Games["clicked_button"] and name != 'order':
                     Games["show_minigame"] = True
                     if not Played[f"{name}_played"]:
                         Games[f"{name}_game"] = True
@@ -984,9 +984,17 @@ while running:
             if current_level.order.clicked(event) and not Games["show_minigame"] and not Games["clicked_button"]:
                 Games["order_open"] = True 
 
+        if next.is_clicked and not Games["clicked_button"]:
+                Games["clicked_button"] = True 
+        
+        if next.is_clicked_up and Games["clicked_button"]:
+                Games["clicked_button"] = False   
+
         if event.type == pygame.MOUSEBUTTONUP:
             if exit_button.is_clicked_up:
-                Games["clicked_button"] = False   
+                Games["clicked_button"] = False 
+
+                
 
         startbutton_show,toppings_time,oven_playing = ovenclicking(Games,Played,startbutton_show,toppings_time,startbutton_rect,oven_playing,next)
 
@@ -1051,7 +1059,7 @@ while running:
             HomeButton(home, Games,toppings_time)
             toppings_time,oven_playing,current_level,levels = go_to_finished(next, Games, completed_levels, levels, current_level, Played,Add_Ins,Toppings,toppings_time,oven_playing)
             if Games["finished_screen"]:
-                Games["show_minigame"] == True
+                screen.blit(minigame,minigame_rect)
 
 
     pygame.display.flip()
