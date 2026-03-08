@@ -188,13 +188,15 @@ def HomeButton(button, game):
         button.image_rect.x = 418
     button.draw(screen)
 
-def HomeReturn(oven, returnhome, currentscreen, core, add, top,games,played,shop):
+def HomeReturn(oven, returnhome, currentscreen, core, add, top,games,played,shop,bowl):
     currentscreen = False
     returnhome = True
     games["toppings_time"] = False
     played["oven_played"] = False
     oven = False
-    exitclicked(games,shop)
+    bowl = None
+    own = False
+    own = exitclicked(games,shop, own)
     for name,item in core.items():
         item.achieved_value = 0
         if name == "butter":
@@ -204,9 +206,9 @@ def HomeReturn(oven, returnhome, currentscreen, core, add, top,games,played,shop
         item.added = False
     for name,item, in top.items():
         item.added = False
-    return returnhome, currentscreen, oven, played
+    return returnhome, currentscreen, oven, played, bowl
 
-def exitclicked(games,shop):
+def exitclicked(games,shop,own):
     for name,item in games.items():
         if name == "toppings_time" and games[name]:
             games[name] = True
@@ -214,6 +216,8 @@ def exitclicked(games,shop):
             games[name] = False
     games["clicked_button"] = True
     shop.clicks = 0
+    own = False
+    return own
 
 class level:
     def __init__(self,n):
@@ -256,7 +260,7 @@ tutorial_ingredients = {"order": Core("assets/order.png",0,0),
                "eggs" : Core("assets/eggtray.png",810,0,2),
                "flour" : Core("assets/flour.png",1275,13,500),
                "sugar" : Core("assets/sugar.png",1275,320,300),
-               "milk" : Core("assets/milk.png",1275,620,2)
+               "milk" : Core("assets/milk.png",1275,620,200)
         }
 levels["tutorial"].core_ingredients = {"eggs": tutorial_ingredients["eggs"],
                                        "milk": tutorial_ingredients["milk"],
@@ -991,7 +995,7 @@ def ovenclicking(games,played,startshow,start,playing):
 
     return startshow,playing
 
-def nextclicking(next_button, games, played, current, level_list, startshow,completed_list,add,top,core):
+def nextclicking(next_button, games, played, current, level_list, startshow,completed_list,add,top,core,bowl):
     if next_button.is_clicked(event) and not games["clicked_button"]and not games["show_shop"]:
         games["clicked_button"] = True
         if not played["oven_played"]:
@@ -1003,13 +1007,14 @@ def nextclicking(next_button, games, played, current, level_list, startshow,comp
         elif games["toppings_time"]:
             if not games["finished_screen"]:
                 games["finished_screen"] = True
-                return current,level_list,startshow 
+                return current,level_list,startshow,bowl
             completed_list[len(completed_list)] = current
             level_list = addlevel(level_list,completed_list,add,top,Core_Ingredient)
             current = level_list[len(completed_list)]
             games["toppings_time"] = False
             played["oven_played"] = False
-            exitclicked(games,shop_button)
+            own = False
+            own = exitclicked(games,shop_button, own)
             for name,item in core.items():
                 item.achieved_value = 0
                 if name == "butter":
@@ -1019,12 +1024,13 @@ def nextclicking(next_button, games, played, current, level_list, startshow,comp
                 item.added = False
             for name,item in top.items():
                 item.added = False
-            return current,level_list,startshow 
+            return current,level_list,startshow,bowl
+        bowl = None
 
     if next_button.is_clicked_up(event):
         games["clicked_button"] = False
 
-    return current,level_list,startshow 
+    return current,level_list,startshow,bowl
 
 #boolean initializations
 Games = {"eggs_game": False,
@@ -1078,10 +1084,10 @@ while running:
         #If exit is pressed minigame disappears
         if event.type == pygame.MOUSEBUTTONDOWN:
             if exit_button.is_clicked(event):
-                exitclicked(Games,shop_button)
+                not_owned_mini = exitclicked(Games,shop_button, not_owned_mini)
             
             if home.is_clicked(event):
-                show_home, level_playing, oven_game, Played = HomeReturn(oven, show_home, level_playing, Core_Ingredient, Add_Ins, Toppings,Games,Played,shop_button)
+                show_home, level_playing, oven_game, Played, bowl_color = HomeReturn(oven, show_home, level_playing, Core_Ingredient, Add_Ins, Toppings,Games,Played,shop_button,bowl_color)
 
             if Games["toppings_time"]:
                 not_owned_mini = topclicking(Toppings, Games,not_owned_mini)
@@ -1133,7 +1139,7 @@ while running:
             item.not_owned(screen)
 
         current_level.order.draw(screen)
-        current_level,levels,startbutton_show = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient)
+        current_level,levels,startbutton_show,bowl_color = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color)
 
         if Games["show_minigame"]:
             screen.blit(minigame,minigame_rect)
@@ -1168,7 +1174,7 @@ while running:
 
         if Games["oven_game"]:
             oven_r,oven_g,oven_b,oven_width= ovendraw(oven,oven_rect,oven_r,oven_g,oven_b,oven_width,startbutton_show,startbutton,startbutton_rect,stopbutton,stopbutton_rect,next,current_level)
-            current_level,levels,startbutton_show = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient)
+            current_level,levels,startbutton_show,bowl_color = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color)
             HomeButton(home, Games)
 
         add_top_draw(Add_Ins,Toppings,Games,not_owned_mini,not_owned_text)
@@ -1190,7 +1196,7 @@ while running:
             add_top_draw(Add_Ins,Toppings,Games,not_owned_mini,not_owned_text)
             if Games["add_icing"]:
                 chooseicing(Color_Buttons,Games,Toppings,exit_button)
-            current_level,levels,startbutton_show = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient)
+            current_level,levels,startbutton_show,bowl_color = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color)
             if Games["finished_screen"]:
                 screen.blit(minigame,minigame_rect)
 
