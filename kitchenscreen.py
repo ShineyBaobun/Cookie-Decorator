@@ -71,6 +71,7 @@ class Topping(Ingredient):
         self.name = ''
         if show_img:
             self.show_img = pygame.image.load(show_img).convert_alpha()
+            self.show_img_OG = pygame.image.load(show_img).convert_alpha()
         if slide != None:
             self.slide = slide
             self.slide_pos = slide_pos
@@ -474,6 +475,7 @@ def topclicking(tops,games,own):
             if item.owned:
                 if name == "icing":
                     games["add_icing"] = True
+                    games["show_minigame"] = True
                 else:
                     item.added = True
             if not item.owned:
@@ -481,19 +483,20 @@ def topclicking(tops,games,own):
     return own
 
 def add_top_draw(adds,tops,games,own,text):
-    if games["added_icing"] and not games["show_minigame"]:
+    if games["added_icing"]:
         tops["icing"].added = True
-    for name, item in adds.items():
-        if name == "matcha" and item.added:
-            g+=50
-        if name != "food coloring" and name!= "matcha" and item.added and games["toppings_time"]:
-            screen.blit(item.show_img, (0,0))
-    for name, item in tops.items():
-        if item.added:
-            screen.blit(item.show_img, (0,0))
-        if own:
-            games["show_minigame"] = True
-            screen.blit(text, (550,440))
+        games["add_icing"] = False
+    if not games["show_minigame"]:
+        for name, item in adds.items():
+            if name == "matcha" and item.added:
+                g+=50
+            if name != "food coloring" and name!= "matcha" and item.added and games["toppings_time"]:
+                screen.blit(item.show_img, (0,0))
+        for name, item in tops.items():
+            if item.added:
+                screen.blit(item.show_img, (0,0))
+            if own:
+                games["show_minigame"] = True
 
 def choosecolor(colors,games,adds,cookie):
     color_order = ["red", "green", "blue"]
@@ -512,6 +515,7 @@ def chooseicing(colors,games,tops,exit):
     for shade, button in colors.items():
         button.draw(screen)
         if button.is_clicked(event):
+            tops["icing"].show_img = tops["icing"].show_img_OG.copy()
             tops["icing"].achieve_rgb = [50,50,50]
             tops["icing"].achieve_rgb[color_order.index(shade)] = 255
             tops["icing"].show_img.fill(tuple(tops["icing"].achieve_rgb), special_flags=pygame.BLEND_RGB_MIN)
@@ -529,7 +533,7 @@ def compare_results(current, adds,tops):
         for add, ingredient in adds.items():
             if add not in current.add_ins and add.added:
                 wrong.append('Incorrect ingredient added')
-        for name,item in current.toppings.items():
+        for name,item in current.s.items():
             if not item.added:
                 wrong.append('Missing ingredient')
         for top, ingredient in tops.items():
@@ -1144,6 +1148,8 @@ while running:
         if Games["show_minigame"]:
             screen.blit(minigame,minigame_rect)
             exit_button.draw(screen)
+            if not_owned_mini:
+                screen.blit(not_owned_text, (550,440))
 
         if Games["order_open"]:
             order_texts = order_recipe(order_texts, current_level, screen, Games, exit_button) 
