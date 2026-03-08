@@ -439,7 +439,7 @@ def shop_clicking(button,games,left, right):
         games["clicked_button"] = False
 
 
-not_owned_text = font.render("Ingredient Not Owned. Would you like to purchase?", True, (0,0,0))
+not_owned_text = font.render("Ingredient Not Owned. Buy in Shop", True, (0,0,0))
 not_owned_mini = False
 
 def addclicking(adds, games,own,color):
