@@ -12,7 +12,7 @@ height = 900
 screen = pygame.display.set_mode((width, height))
 
 #basic initializations
-font = pygame.font.Font(None, 30)
+font = pygame.font.Font("assets/PixelFont.otf", 25)
 basic_initializations = {}
 already_played_text = font.render("Ingredient already added", True, (0,0,0))
 background = pygame.image.load("assets/Kitchen.png").convert()
