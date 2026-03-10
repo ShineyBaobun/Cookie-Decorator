@@ -12,7 +12,7 @@ height = 900
 screen = pygame.display.set_mode((width, height))
 
 #basic initializations
-font = pygame.font.Font("assets/PixelFont.otf", 25)
+font = pygame.font.Font("assets/PixelFont.otf", 20)
 basic_initializations = {}
 already_played_text = font.render("Ingredient already added", True, (0,0,0))
 background = pygame.image.load("assets/Kitchen.png").convert()
@@ -22,7 +22,7 @@ traybackground = pygame.image.load("assets/traybackground.png").convert_alpha()
 cookies = pygame.image.load("assets/Cookies.PNG").convert_alpha()
 bowl_color = None
 bowl_r = 150
-Money = 50000
+Money = 0
 balance_text = font.render(f"Balance: {Money}", True, "Black")
 
 #Ingredient class and initialization
@@ -54,6 +54,7 @@ class Ingredient:
 class Core(Ingredient):
     def __init__(self, path, x, y,expected=None):
         super().__init__(path, x, y)
+        self.spilled = 0
         if expected:
             self.expected_value = expected
         self.achieved_value = 0
@@ -89,7 +90,7 @@ class Topping(Ingredient):
             surface.blit(self.lock, self.lock_rect)
     
     def draw_description(self,descript):
-        self.description = font.render(f"{self.name} costs {self.cost}", True, "Black")
+        self.description = font.render(f"{self.name}: ${self.cost}", True, "Black")
         self.location = list(self.slide_pos)
         self.location[0] -= 100
         self.location[1] += 100
@@ -104,7 +105,7 @@ Core_Ingredient = {"order": Core("assets/order.png",0,0),
                "eggs" : Core("assets/eggtray.png",810,0,2),
                "flour" : Core("assets/flour.png",1275,13,500),
                "sugar" : Core("assets/sugar.png",1275,320,300),
-               "milk" : Core("assets/milk.png",1275,620,2)
+               "milk" : Core("assets/milk.png",1275,620,200)
         }
 
 Add_Ins = {"food coloring": Topping("assets/coloring.png",0,310,0,0,(425,300)), 
@@ -189,7 +190,7 @@ def HomeButton(button, game):
         button.image_rect.x = 418
     button.draw(screen)
 
-def HomeReturn(oven, returnhome, currentscreen, core, add, top,games,played,shop,bowl):
+def HomeReturn(oven, returnhome, currentscreen, core, add, top,games,played,shop,bowl,width):
     currentscreen = False
     returnhome = True
     games["toppings_time"] = False
@@ -197,17 +198,20 @@ def HomeReturn(oven, returnhome, currentscreen, core, add, top,games,played,shop
     oven = False
     bowl = None
     own = False
+    width = 0
     own = exitclicked(games,shop, own)
     for name,item in core.items():
         item.achieved_value = 0
         if name == "butter":
             item.achieved_value = []
+        if name == "sugar":
+            item.achieved_value = [0,0]
         item.added = False
     for name,item, in add.items():
         item.added = False
     for name,item, in top.items():
         item.added = False
-    return returnhome, currentscreen, oven, played, bowl
+    return returnhome, currentscreen, oven, played, bowl,width
 
 def exitclicked(games,shop,own):
     for name,item in games.items():
@@ -293,6 +297,7 @@ def homescreen(levelbutton, shop, play, tut, games, miniimage, minirect, exit,le
             thislevel.draw(screen)
 
     if games["show_shop"]:
+        coinstext = font.render(f"Balance: {Money}", True, "Black")
         screen.blit(coinstext,(720,150))
         for name, add, in adds.items():
             if add.slide == shop.clicks:
@@ -374,17 +379,16 @@ def addlevel(leveldict,completed,adds,tops,core_list):
         
         leveldict[len(completed)].order = core_list["order"]
         for name, item in adds.items():
-            if randint(0,1) == 1:
+            if randint(0,2) == 1:
                 if item.owned and name != "food coloring":
                     leveldict[len(completed)].add_ins[name] = Adds[name]
                 if item.owned and name == "food coloring":
-                    for shade in Colors:
-                        if randint(0,1) == 1:
-                            leveldict[len(completed)].add_ins[f"{shade} food coloring"] = Adds[name]
-                            leveldict[len(completed)].expectedRGB[Colors.index(shade)] += 50
+                    shade = randint(0,2)
+                    leveldict[len(completed)].add_ins[f"{Colors[shade]} food coloring"] = Adds[name]
+                    leveldict[len(completed)].expectedRGB[shade] += 50
 
         for name, item in tops.items():
-            if randint(0,1) == 1:
+            if randint(0,2) == 1:
                 if item.owned and name != "icing":
                     leveldict[len(completed)].toppings[name] = Tops[name]
                 if item.owned and name == "icing":
@@ -438,7 +442,6 @@ def shop_clicking(button,games,left, right):
 
     if left.is_clicked_up(event) or right.is_clicked_up(event):
         games["clicked_button"] = False
-
 
 not_owned_text = font.render("Ingredient Not Owned. Buy in Shop", True, (0,0,0))
 not_owned_mini = False
@@ -521,24 +524,70 @@ def chooseicing(colors,games,tops,exit):
             tops["icing"].show_img.fill(tuple(tops["icing"].achieve_rgb), special_flags=pygame.BLEND_RGB_MIN)
             games["added_icing"] = True
 
-def compare_results(current, adds,tops):
-    wrong = {}
+def compare_results(current,core,adds,tops,r,value,games):
+    wrong = set()
     if current.stars >0:
         for name,item in current.core_ingredients.items():
-            if item.achieved_value > item.expected_value +20 or item.achieved_value < item.expected_value -20:
-                wrong.append('Incorrect value of ingredients added')
+            if name == "butter":
+                if shoelace(core[name].achieved_value) > shoelace(item.expected_value) +10 or shoelace(core[name].achieved_value) < shoelace(item.expected_value) -10:
+                    wrong.add('*Incorrect value of ingredients added')
+            elif name == "eggs":
+                if core[name].achieved_value != item.expected_value:
+                    wrong.add('*Incorrect value of ingredients added')
+            elif name == "sugar":
+                if core[name].achieved_value[0] != item.expected_value:
+                    wrong.add('*Incorrect value of ingredients added')
+                if core[name].achieved_value[1] > 0:
+                    wrong.add('Salt was incorrectly added')
+            else:
+                if core[name].achieved_value > item.expected_value +20 or core[name].achieved_value < item.expected_value -20:
+                    wrong.add('*Incorrect value of ingredients added')
         for name,item in current.add_ins.items():
-            if not item.added:
-                wrong.append('Missing ingredient')
+            if 'food coloring' in name:
+                if adds["food coloring"].achieve_rgb == [0,0,0]:
+                    wrong.add('*Missing ingredient')
+            elif not adds[name].added:
+                wrong.add('*Missing ingredient')
         for add, ingredient in adds.items():
-            if add not in current.add_ins and add.added:
-                wrong.append('Incorrect ingredient added')
-        for name,item in current.s.items():
-            if not item.added:
-                wrong.append('Missing ingredient')
+            if add not in current.add_ins and ingredient.added:
+                wrong.add('*Incorrect ingredient added')
+        for name,item in current.toppings.items():
+            if 'icing' in name:
+                if tops["icing"].achieve_rgb == [50,50,50]:
+                    wrong.add('*Missing ingredient')
+            elif not tops[name].added:
+                wrong.add('*Missing ingredient')
         for top, ingredient in tops.items():
-            if add not in current.add_ins and add.added:
-                wrong.append('Incorrect topping added')
+            if top not in current.toppings and ingredient.added:
+                wrong.add('*Incorrect topping added')
+        if r > 10:
+            wrong.add('*Cookies baked for an incorrect period of time')
+        if core["flour"].spilled >0:
+            wrong.add('*Flour was spilled')
+    wrong = list(wrong)
+    if len(wrong) > 4:
+        current.stars = 1
+    else:
+        current.stars = 5-len(wrong)
+    price = 10
+    for add,ingredient in adds.items():
+        if ingredient.added:
+            price += int(ingredient.cost * (current.stars*2/100))
+    star_text = font.render(f"{current.stars} Stars! Press next to continue!", True,(0,0,0))
+    price_text = font.render(f"You've earned ${price}", True, (0,0,0))
+    lost_text = font.render(f"You've lost stars because:", True, (0,0,0))
+    screen.blit(star_text,(400,300))
+    screen.blit(price_text,(400,350))
+    if len(wrong)>0:
+        screen.blit(lost_text,(400,400))
+        for i in range(len(wrong)):
+            text = font.render(wrong[i], True, (0,0,0))
+            screen.blit(text,(400,450+50*i))
+    if not games["added_price"]:
+        value += price
+        games["added_price"] = True
+    return value
+
 
 #egg game initializations
 egg_fallen = 0
@@ -763,6 +812,8 @@ def flourfalling(right,x,pour,h,flourx,flourw,rect,y,core,image,imagerect,comple
             y-= abs(cup.y - rect.y)/300
             core["flour"].achieved_value += abs(cup.y - rect.y)
             flour_volume_text = font.render(f"Volume: {int(core["flour"].achieved_value/100)}", True, "Black")
+        else:
+            core["flour"].spilled += 1
 
     return x,h,y,right,flourx,flourw,flour_volume_text
 
@@ -905,9 +956,9 @@ def butterdrawing(current,y,games,played,fallen,text,core,color):
         pygame.draw.polygon(screen,(200,200,200),fallen)
         pygame.draw.polygon(screen,(255, 253, 116),core["butter"].achieved_value)
         for i in range(5):
-            fallen[i][1] += 2
-            current.core_ingredients["butter"].expected_value[i][1] += 2
-        y += 2
+            fallen[i][1] += 5
+            current.core_ingredients["butter"].expected_value[i][1] += 5
+        y += 5
 
     if butter_back.y >= 900:
         games["butter_game"] = False
@@ -999,7 +1050,7 @@ def ovenclicking(games,played,startshow,start,playing):
 
     return startshow,playing
 
-def nextclicking(next_button, games, played, current, level_list, startshow,completed_list,add,top,core,bowl):
+def nextclicking(next_button, games, played, current, level_list, startshow,completed_list,add,top,core,bowl,width):
     if next_button.is_clicked(event) and not games["clicked_button"]and not games["show_shop"]:
         games["clicked_button"] = True
         if not played["oven_played"]:
@@ -1011,30 +1062,33 @@ def nextclicking(next_button, games, played, current, level_list, startshow,comp
         elif games["toppings_time"]:
             if not games["finished_screen"]:
                 games["finished_screen"] = True
-                return current,level_list,startshow,bowl
+                return current,level_list,startshow,bowl,width
             completed_list[len(completed_list)] = current
             level_list = addlevel(level_list,completed_list,add,top,Core_Ingredient)
             current = level_list[len(completed_list)]
             games["toppings_time"] = False
             played["oven_played"] = False
             own = False
+            width = 0
             own = exitclicked(games,shop_button, own)
             for name,item in core.items():
                 item.achieved_value = 0
                 if name == "butter":
                     item.achieved_value = []
+                if name == "sugar":
+                    item.achieved_value = [0,0]
                 item.added = False
             for name,item in add.items():
                 item.added = False
             for name,item in top.items():
                 item.added = False
-            return current,level_list,startshow,bowl
+            return current,level_list,startshow,bowl,width
         bowl = None
 
     if next_button.is_clicked_up(event):
         games["clicked_button"] = False
 
-    return current,level_list,startshow,bowl
+    return current,level_list,startshow,bowl,width
 
 #boolean initializations
 Games = {"eggs_game": False,
@@ -1054,7 +1108,8 @@ Games = {"eggs_game": False,
          "add_coloring": False,
          "add_icing": False,
          "added_icing": False,
-         "show_shop": False
+         "show_shop": False,
+         "added_price": False
          }
 
 Played = {"eggs_played": False,
@@ -1091,7 +1146,7 @@ while running:
                 not_owned_mini = exitclicked(Games,shop_button, not_owned_mini)
             
             if home.is_clicked(event):
-                show_home, level_playing, oven_game, Played, bowl_color = HomeReturn(oven, show_home, level_playing, Core_Ingredient, Add_Ins, Toppings,Games,Played,shop_button,bowl_color)
+                show_home, level_playing, oven_game, Played, bowl_color, oven_width = HomeReturn(oven, show_home, level_playing, Core_Ingredient, Add_Ins, Toppings,Games,Played,shop_button,bowl_color,oven_width)
 
             if Games["toppings_time"]:
                 not_owned_mini = topclicking(Toppings, Games,not_owned_mini)
@@ -1143,7 +1198,7 @@ while running:
             item.not_owned(screen)
 
         current_level.order.draw(screen)
-        current_level,levels,startbutton_show,bowl_color = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color)
+        current_level,levels,startbutton_show,bowl_color,oven_width = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color,oven_width)
 
         if Games["show_minigame"]:
             screen.blit(minigame,minigame_rect)
@@ -1180,7 +1235,7 @@ while running:
 
         if Games["oven_game"]:
             oven_r,oven_g,oven_b,oven_width= ovendraw(oven,oven_rect,oven_r,oven_g,oven_b,oven_width,startbutton_show,startbutton,startbutton_rect,stopbutton,stopbutton_rect,next,current_level)
-            current_level,levels,startbutton_show,bowl_color = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color)
+            current_level,levels,startbutton_show,bowl_color,oven_width = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color,oven_width)
             HomeButton(home, Games)
 
         add_top_draw(Add_Ins,Toppings,Games,not_owned_mini,not_owned_text)
@@ -1202,9 +1257,10 @@ while running:
             add_top_draw(Add_Ins,Toppings,Games,not_owned_mini,not_owned_text)
             if Games["add_icing"]:
                 chooseicing(Color_Buttons,Games,Toppings,exit_button)
-            current_level,levels,startbutton_show,bowl_color = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color)
+            current_level,levels,startbutton_show,bowl_color,oven_width = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color,oven_width)
             if Games["finished_screen"]:
                 screen.blit(minigame,minigame_rect)
+                Money = compare_results(current_level,Core_Ingredient,Add_Ins,Toppings,oven_r, Money,Games)
 
 
     pygame.display.flip()
