@@ -26,6 +26,9 @@ Money = 0
 balance_text = font.render(f"Balance: {Money}", True, "Black")
 tutorial_arrow = pygame.image.load("assets/tutorial_arrow.png").convert_alpha
 
+reset_constants = {"bowl_color": [None, None],
+                   "bowl_r": [150,150],}
+
 #Ingredient class and initialization
 class Ingredient:
     def __init__(self, path = None, x=0, y=0, rw = None, rh =None):
@@ -347,7 +350,11 @@ def addlevel(leveldict,completed,adds,tops,core_list):
     if len(completed) <= len(leveldict) and len(leveldict) > 0:
         leveldict[len(completed)] = level(len(completed))
         Ingredients = {"order": Core(None,0,0), 
-               "butter" : Core(None,342,2,[[randint(550,700),randint(400,500)],[randint(700,850),randint(400,500)], [randint(850,1050),randint(400,500)], [randint(800,1050),randint(500,600)], [randint(550,800),randint(500,600)]]),
+               "butter" : Core(None,342,2,[[randint(550,700),randint(400,500)],
+                                           [randint(700,850),randint(400,500)],
+                                            [randint(850,1050),randint(400,500)],
+                                            [randint(800,1050),randint(500,600)],
+                                            [randint(550,800),randint(500,600)]]),
                "eggs" : Core(None,810,0,randint(1,5)),
                "flour" : Core(None,1275,13,(690- randint(400,600)) * 3),
                "sugar" : Core(None,1275,320,randint(1,5)),
@@ -996,26 +1003,28 @@ order_texts = {}
 def order_recipe(texts, current, screen, games, exit):
     games["show_minigame"] = True
     exit.draw(screen)
-    texts["core"] = font.render(f"Core Ingredients:", True, "Black")
-    screen.blit(texts["core"],(400,150))
-    for i, (name, expected) in enumerate(current.core_ingredients.items()):
-        if name == "butter":
-            value = int(shoelace(expected.expected_value)/1000)
-        else:
-            value = expected.expected_value
-        texts[name] = font.render(f"{name}:{value}", True, "Black")
-        screen.blit(texts[name],(400,150+(1+i)*40))
-    for i, (name, expected) in enumerate(current.add_ins.items()):
-        texts[name] = font.render(f"{name}", True, "Black")
-        screen.blit(texts[name],(400,350+(1+i)*40))
-    texts["top"] = font.render(f"Toppings:", True, "Black")
-    screen.blit(texts["top"],(800,150))
-    for i, (name, expected) in enumerate(current.toppings.items()):
-        if name == "icing":
-            texts[name] = font.render(f"{item.color} {name}", True, "Black")
-        else:
+    if not games["toppings_time"]:
+        texts["core"] = font.render(f"Core Ingredients:", True, "Black")
+        screen.blit(texts["core"],(400,150))
+        for i, (name, expected) in enumerate(current.core_ingredients.items()):
+            if name == "butter":
+                value = int(shoelace(expected.expected_value)/1000)
+            else:
+                value = expected.expected_value
+            texts[name] = font.render(f"{name}:{value}", True, "Black")
+            screen.blit(texts[name],(400,150+(1+i)*40))
+        for i, (name, expected) in enumerate(current.add_ins.items()):
             texts[name] = font.render(f"{name}", True, "Black")
-        screen.blit(texts[name],(800,150+(i+1)*40))
+            screen.blit(texts[name],(400,350+(1+i)*40))
+    if  games["toppings_time"]:
+        texts["top"] = font.render(f"Toppings:", True, "Black")
+        screen.blit(texts["top"],(400,150))
+        for i, (name, expected) in enumerate(current.toppings.items()):
+            if name == "icing":
+                texts[name] = font.render(f"{item.color} {name}", True, "Black")
+            else:
+                texts[name] = font.render(f"{name}", True, "Black")
+            screen.blit(texts[name],(400,150+(i+1)*40))
     return texts
 
 #Oven initializations
