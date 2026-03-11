@@ -13,21 +13,15 @@ screen = pygame.display.set_mode((width, height))
 
 #basic initializations
 font = pygame.font.Font("assets/PixelFont.otf", 20)
-basic_initializations = {}
 already_played_text = font.render("Ingredient already added", True, (0,0,0))
 background = pygame.image.load("assets/Kitchen.png").convert()
 minigame = pygame.image.load("assets/minigame.png").convert_alpha()
 minigame_rect = minigame.get_rect(topleft=((1600/2)-minigame.get_width()/2,(900/2)-minigame.get_height()/2))
 traybackground = pygame.image.load("assets/traybackground.png").convert_alpha()
 cookies = pygame.image.load("assets/Cookies.PNG").convert_alpha()
-bowl_color = None
-bowl_r = 150
 Money = 0
 balance_text = font.render(f"Balance: {Money}", True, "Black")
 tutorial_arrow = pygame.image.load("assets/tutorial_arrow.png").convert_alpha
-
-reset_constants = {"bowl_color": [None, None],
-                   "bowl_r": [150,150],}
 
 #Ingredient class and initialization
 class Ingredient:
@@ -167,16 +161,18 @@ class Button:
     def is_clicked(self,event):
         return event.type == pygame.MOUSEBUTTONDOWN and self.image_rect.collidepoint(event.pos)
     
-level_button = Button(400,100,width/2,height/2 - 50,'assets/minigame.png', "Levels")
-shop_button = Button(400,100,width/2,height/2 +75,'assets/minigame.png',"Shop")
-play_button = Button(400,100,width/2,height/2 +200,'assets/minigame.png',"Play")
-tutorial_button = Button(400,100,width/2,height/2 +325,'assets/minigame.png',"Tutorial")
-exit_button = Button(55,55,minigame_rect.x+27, minigame_rect.y+28,'assets/exit.png')
-home = Button(86,83,418,841,"assets/home.png")
-next = Button(142,93,1146,846,"assets/nextbutton.png")
-next_right = Button(142,93,1300,450,"assets/next_right.png")
-next_left = Button(142,93,300,450,"assets/next_left.png")
-buy_button = Button(75,50,800,450,"assets/next_left.png")
+Buttons = {"level_button": Button(400,100,width/2,height/2 - 50,'assets/minigame.png', "Levels"),
+           "shop_button": Button(400,100,width/2,height/2 +75,'assets/minigame.png',"Shop"),
+           "play_button": Button(400,100,width/2,height/2 +200,'assets/minigame.png',"Play"),
+           "tutorial_button": Button(400,100,width/2,height/2 +325,'assets/minigame.png',"Tutorial"),
+           "exit_button": Button(55,55,minigame_rect.x+27, minigame_rect.y+28,'assets/exit.png'),
+           "home": Button(86,83,418,841,"assets/home.png"),
+           "next": Button(142,93,1146,846,"assets/nextbutton.png"),
+           "next_right": Button(142,93,1300,450,"assets/next_right.png"),
+           "next_left": Button(142,93,300,450,"assets/next_left.png"),
+           "buy_button": Button(75,50,800,450,"assets/next_left.png"),
+           "startbutton": Button(523,178,1200,450,"assets/startbutton.png"),
+           "stopbutton": Button(523,178,1200,450,"assets/stopbutton.png")}
 
 Color_Buttons = {
     "red": Button(100,100,600,500,"assets/red.png","Red"),
@@ -184,24 +180,23 @@ Color_Buttons = {
     "blue": Button(100,100,1000,500,"assets/blue.png","Blue"),
 }
 
-def HomeButton(button, game):
+def HomeButton(buttons, game):
     if game["oven_game"]:
-        button.image_rect.x = 950
+        buttons["home"].image_rect.x = 950
     elif game["toppings_time"]:
-        button.image_rect.x = 300
+        buttons["home"].image_rect.x = 300
     else:
-        button.image_rect.x = 418
-    button.draw(screen)
+        buttons["home"].image_rect.x = 418
+    buttons["home"].draw(screen)
 
-def HomeReturn(oven, returnhome, currentscreen, core, add, top,games,played,shop,bowl,width):
-    currentscreen = False
-    returnhome = True
+def HomeReturn(core, add, top,games,played,reset,buttons):
+    for name, value in reset.items():
+        reset[name][1] = reset[name][0]
+    exitclicked(games,buttons)
+    games["level_playing"] = False
+    games["show_home"] = True
     games["toppings_time"] = False
-    oven = False
-    bowl = None
-    own = False
-    width = 0
-    own = exitclicked(games,shop, own)
+    games["oven_game"] = False
     for name,item in core.items():
         item.achieved_value = 0
         if name == "butter":
@@ -215,18 +210,23 @@ def HomeReturn(oven, returnhome, currentscreen, core, add, top,games,played,shop
         item.added = False
     for name,value in played.items():
         played[name] = False
-    return returnhome, currentscreen, oven, played, bowl,width
 
-def exitclicked(games,shop,own):
+def exitclicked(games,buttons):
     for name,item in games.items():
         if name == "toppings_time" and games[name]:
             games[name] = True
+        elif name == "show_home" and games[name]:
+            games[name] = games[name]
+        elif name == "level_playing" and games[name]:
+            games[name] = games[name]
+        elif name == "oven_game" and games[name]:
+            games[name] = games[name]
+        elif name == "oven_playing" and games[name]:
+            games[name] = games[name]
         else:
             games[name] = False
     games["clicked_button"] = True
-    shop.clicks = 0
-    own = False
-    return own
+    buttons["shop_button"].clicks = 0
 
 class level:
     def __init__(self,n):
@@ -238,7 +238,6 @@ class level:
         self.expectedRGB = [0,0,0,0]
         self.achievedRGB = [0,0,0,0]
         self.n = n
-        self.baked = 0
         self.image = pygame.image.load("assets/minigame.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (100,100))
         self.x = (n%8) * 125 + 312
@@ -293,16 +292,16 @@ def tutorial_instructions(x,y,message,angle):
     text = pygame.transform.rotate(text, angle)
     screen.blit(text,(x,y))
 
-def homescreen(levelbutton, shop, play, tut, games, miniimage, minirect, exit,leveldict,adds,tops,left,right,coins,coinstext):
+def homescreen(games, miniimage, minirect,leveldict,adds,tops,coins,coinstext,buttons):
     screen.fill((225, 150, 164))
-    levelbutton.draw(screen)
-    shop.draw(screen)
-    play.draw(screen)
-    tut.draw(screen)
+    buttons["level_button"].draw(screen)
+    buttons["shop_button"].draw(screen)
+    buttons["play_button"].draw(screen)
+    buttons["tutorial_button"].draw(screen)
 
     if games["show_minigame"]:
         screen.blit(miniimage,minirect)
-        exit.draw(screen)
+        buttons["exit_button"].draw(screen)
 
     if games["show_levels"]:
         for name, thislevel in leveldict.items():
@@ -312,7 +311,7 @@ def homescreen(levelbutton, shop, play, tut, games, miniimage, minirect, exit,le
         coinstext = font.render(f"Balance: {Money}", True, "Black")
         screen.blit(coinstext,(720,150))
         for name, add, in adds.items():
-            if add.slide == shop.clicks:
+            if add.slide == buttons["shop_button"].clicks:
                 screen.blit(add.shop_img,add.shop_img_rect)
                 if not add.owned:
                     screen.blit(add.buy_photo,add.buy_rect)
@@ -326,7 +325,7 @@ def homescreen(levelbutton, shop, play, tut, games, miniimage, minirect, exit,le
                 if add.owned:
                     screen.blit(add.no_buy_photo,add.no_buy_rect)
         for name, top, in tops.items():
-            if top.slide == shop.clicks and name not in adds:
+            if top.slide == buttons["shop_button"].clicks and name not in adds:
                 screen.blit(top.shop_img,top.shop_img_rect)
                 if not top.owned:
                     screen.blit(top.buy_photo,top.buy_rect)
@@ -339,11 +338,11 @@ def homescreen(levelbutton, shop, play, tut, games, miniimage, minirect, exit,le
                             coinstext = font.render(f"Balance: {coins}", True, "Black")
                 if top.owned:
                     screen.blit(top.no_buy_photo,top.no_buy_rect)
-        if shop.clicks > 0:
-            left.draw(screen)
+        if buttons["shop_button"].clicks > 0:
+            buttons["next_left"].draw(screen)
 
-        if shop.clicks < 1:
-            right.draw(screen)
+        if buttons["shop_button"].clicks < 1:
+            buttons["next_right"].draw(screen)
     return coins,coinstext
 
 def addlevel(leveldict,completed,adds,tops,core_list):
@@ -414,80 +413,78 @@ def addlevel(leveldict,completed,adds,tops,core_list):
 
     return leveldict
 
-def level_clicking(button,event,games,leveldict,playing,current,play,tut):
-    if button.is_clicked(event) and not games["show_minigame"]:
+def level_clicking(event,games,leveldict,current,buttons):
+    if buttons["level_button"].is_clicked(event) and not games["show_minigame"]:
         games["show_levels"] = True
         games["show_minigame"] = True
 
-    if play.is_clicked(event) and not games["show_minigame"]:
+    if buttons["play_button"].is_clicked(event) and not games["show_minigame"]:
         current = leveldict[list(leveldict)[-1]]
-        playing = True
+        games["level_playing"] = True
         games["clicked_button"] = True
     
-    if tut.is_clicked(event) and not games["show_minigame"]:
+    if buttons["tutorial_button"].is_clicked(event) and not games["show_minigame"]:
         current = leveldict["tutorial"]
-        playing = True
+        games["level_playing"] = True
         games["clicked_button"] = True
 
     for name, num in leveldict.items():
-        if num.clicked(event) and not playing:
+        if num.clicked(event) and not games["level_playing"]:
             games["clicked_button"] = True
             current = num
-            playing = True
+            games["level_playing"] = True
             games["show_minigame"] = False
         
         if num.clickedup(event):
             clicked = False
             games["show_levels"] = False
 
-    return playing, current
+    return current
 
-def shop_clicking(button,games,left, right):
+def shop_clicking(button,games,buttons):
     if button.is_clicked(event) and not games["show_minigame"]:
         games["show_shop"] = True
         games["show_minigame"] = True
 
-    if left.is_clicked(event) and not games["clicked_button"]:
+    if buttons["next_left"].is_clicked(event) and not games["clicked_button"]:
         games["clicked_button"] = True
         button.clicks -=1
 
-    if right.is_clicked(event) and not games["clicked_button"]:
+    if buttons["next_right"].is_clicked(event) and not games["clicked_button"]:
         games["clicked_button"] = True
         button.clicks +=1
 
-    if left.is_clicked_up(event) or right.is_clicked_up(event):
+    if buttons["next_left"].is_clicked_up(event) or buttons["next_right"].is_clicked_up(event):
         games["clicked_button"] = False
 
 not_owned_text = font.render("Ingredient Not Owned. Buy in Shop", True, (0,0,0))
-not_owned_mini = False
 
-def addclicking(adds, games,own,color):
+def addclicking(adds, games,reset):
     for name, item in adds.items():
         if item.clicked(event): 
             if item.owned and not games["toppings_time"]:
                 if name != "food coloring":
                     item.added = True
                     if name == "chocolate chips":
-                        color = (123,63,0)
+                        reset["bowl_color"][1] = (123,63,0)
                     if name == "sprinkles":
-                        color = (255,192,203)
+                        reset["bowl_color"][1] = (255,192,203)
                     if name == "oats":
-                        color = (209,179,153)
+                        reset["bowl_color"][1] = (209,179,153)
                     if name == "peanuts":
-                        color = (120, 47, 22)
+                        reset["bowl_color"][1] = (120, 47, 22)
                     if name == "pistachio":
-                        color = (147, 197, 114)
+                        reset["bowl_color"][1] = (147, 197, 114)
                     if name == "matcha":
-                        color = (145, 181, 0)
+                        reset["bowl_color"][1] = (145, 181, 0)
                     if name == "raisins":
-                        color = (36, 33, 36)
+                        reset["bowl_color"][1] = (36, 33, 36)
                 if name == "food coloring":
                     games["add_coloring"] = True
             if not item.owned and not games["toppings_time"]:
-                own = True
-    return own, color
+                games["not_owned_mini"] = True
 
-def topclicking(tops,games,own):
+def topclicking(tops,games):
     for name, item in tops.items():
         if item.clicked(event): 
             if item.owned:
@@ -497,10 +494,10 @@ def topclicking(tops,games,own):
                 else:
                     item.added = True
             if not item.owned:
-                own = True
-    return own
+                games["not_owned_mini"] = True
+    return
 
-def add_top_draw(adds,tops,games,own,text):
+def add_top_draw(adds,tops,games):
     if games["added_icing"]:
         tops["icing"].added = True
         games["add_icing"] = False
@@ -513,7 +510,7 @@ def add_top_draw(adds,tops,games,own,text):
         for name, item in tops.items():
             if item.added:
                 screen.blit(item.show_img, (0,0))
-            if own:
+            if games["not_owned_mini"]:
                 games["show_minigame"] = True
 
 def choosecolor(colors,games,adds,cookie):
@@ -528,8 +525,7 @@ def choosecolor(colors,games,adds,cookie):
             cookie.fill(tuple(adds["food coloring"].achieve_rgb), special_flags=pygame.BLEND_RGB_ADD)
             games["add_coloring"] = False
 
-
-def chooseicing(colors,games,tops,exit):
+def chooseicing(colors,games,tops):
     color_order = ["red", "green", "blue"]
     games["show_minigame"] = True
     for shade, button in colors.items():
@@ -541,7 +537,7 @@ def chooseicing(colors,games,tops,exit):
             tops["icing"].show_img.fill(tuple(tops["icing"].achieve_rgb), special_flags=pygame.BLEND_RGB_MIN)
             games["added_icing"] = True
 
-def compare_results(current,core,adds,tops,r,value,games):
+def compare_results(current,core,adds,tops,value,games,reset):
     wrong = set()
     if current.stars >0:
         for name,item in current.core_ingredients.items():
@@ -577,7 +573,7 @@ def compare_results(current,core,adds,tops,r,value,games):
         for top, ingredient in tops.items():
             if top not in current.toppings and ingredient.added:
                 wrong.add('*Incorrect topping added')
-        if r > 10:
+        if reset["oven_r"][1] > 10:
             wrong.add('*Cookies baked for an incorrect period of time')
         if core["flour"].spilled >20:
             wrong.add('*Flour was spilled')
@@ -606,7 +602,6 @@ def compare_results(current,core,adds,tops,r,value,games):
     return value
 
 #egg game initializations
-egg_fallen = 0
 basket = pygame.image.load('assets/basket.png').convert_alpha()
 basket = pygame.transform.scale(basket, (250,150))
 basket_rect = basket.get_rect()
@@ -653,7 +648,7 @@ eggs = [egg(50,75) for i in range(5)]
 egg_text = font.render(f"Eggs: {Core_Ingredient["eggs"].achieved_value}", True, (0,0,0))
 
 #updates egg position as they fall and increments count when they fall in the basket
-def egg_collisions(egg_list,left,right,bottom,top,length,core,fallen,games,played,text,color,r):
+def egg_collisions(egg_list,left,right,bottom,top,length,core,games,played,text,reset):
     for egg in egg_list:
         egg.update() 
         if egg.rect.colliderect(left) and egg.rect.x > left.x:
@@ -670,29 +665,26 @@ def egg_collisions(egg_list,left,right,bottom,top,length,core,fallen,games,playe
             core["eggs"].achieved_value += 1
             text = font.render(f"Eggs: {core["eggs"].achieved_value}", True, (0,0,0))
             egg.collected = True
-            fallen += 1
+            reset["egg_fallen"][1] += 1
         if egg.rect.top >= length and not egg.fallen:
             egg.fallen = True
-            fallen += 1
+            reset["egg_fallen"][1] += 1
         
-        if fallen == 5:
-            color = (255, 210, 0)
-            r += 10
-            fallen = 0
+        if reset["egg_fallen"][1] == 5:
+            reset["bowl_color"][1] = (255, 210, 0)
+            reset["bowl_r"][1] += 10
             games["eggs_game"] = False
             played["eggs_played"] = True
             games["show_minigame"] = False
 
         screen.blit(text,(1100,150))
-    return fallen, text,color,r
+    return text
 
 def basket_update(rect,bottom,left,right,top):
     bottom.update(rect.x, rect.y+rect.height-10, rect.width, 10)
     left.update(rect.x, rect.y, 10, rect.height)
     right.update(rect.x+rect.width-10, rect.y, 10, rect.height)
     top.update(rect.x+10, rect.y, rect.width-20, 10)
-
-#checks if eggs are in basket
     
 def eggcontrols(basket,basketrect,minirect,bottom,left,right,top,egglist):
     keys = pygame.key.get_pressed()
@@ -736,9 +728,6 @@ class Bottle:
         self.rect = self.image.get_rect(center=self.rect.center)
 
 milk_can = Bottle(930, 230, 100,150)
-milk_h = 0
-milk_y = 690
-
 milk_text = font.render(f"Volume: {Core_Ingredient["milk"].achieved_value}", True, "Black")
 
 def milkclicking(can):
@@ -747,15 +736,15 @@ def milkclicking(can):
         if not can.poured and can.turned:
             can.poured = True
 
-def milk_game_controls(can,h,y,core,games,played,text,color,r):
+def milk_game_controls(can,core,games,played,text,reset):
     can.draw(screen)
     milk_cup = pygame.draw.rect(screen, "black", [700, 400, 300, 300], 10)
-    milk_fill = pygame.draw.rect(screen, "white", [710, y, 280, h])
+    milk_fill = pygame.draw.rect(screen, "white", [710, reset["milk_y"][1], 280, reset["milk_h"][1]])
     
     if can.turned:
         milk_liquid = pygame.draw.rect(screen, "white", [840,213,10,477])
-        h+=1
-        y-=1
+        reset["milk_h"][1]+=1
+        reset["milk_y"][1]-=1
         core["milk"].achieved_value += 2
         text = font.render(f"Volume: {core["milk"].achieved_value}", True, "Black")
 
@@ -766,10 +755,8 @@ def milk_game_controls(can,h,y,core,games,played,text,color,r):
         games["show_minigame"] = False
 
     if not can.turned and can.poured:
-        r += 10
-        color = (253, 255, 246)
-        h = 0
-        y = 690
+        reset["bowl_r"][1] += 10
+        reset["bowl_color"][1] = (253, 255, 246)
         can.poured = False
         can.turned = False
         games["milk_game"] = False
@@ -778,68 +765,63 @@ def milk_game_controls(can,h,y,core,games,played,text,color,r):
 
     screen.blit(text, (1100,150))
 
-    return h,y,text,color,r
+    return text
 
 #flour minigame initialization
 sieve = pygame.image.load("assets/sieve.png").convert_alpha()
 sieve = pygame.transform.scale(sieve, (250,150))
 sieve_rect = sieve.get_rect(center=(width/2,height/2-200))
 flour_right = True
-sieve_y = 690
-sieve_x = 600
-sieve_h = 0
-flour_front_w = 150
-flour_front_x = sieve_rect.x + 75
 flour_pour = False
 flour_complete = pygame.image.load("assets/checkbox.png").convert()
 flour_complete = pygame.transform.scale(flour_complete, (100,100))
 flour_complete_rect = flour_complete.get_rect(center = (width/2+350,height/2-150))
 flour_text = font.render(f"Volume: {int(Core_Ingredient["flour"].achieved_value/100)}", True, "Black")
 
-def flourfalling(right,x,pour,h,flourx,flourw,rect,y,core,image,imagerect,complete,completerect,flour_volume_text):
+def flourfalling(right,pour,rect,core,image,imagerect,complete,completerect,flour_volume_text,reset):
     screen.blit(image,imagerect)
-    cup = pygame.draw.rect(screen, "black", [x, 400, 300, 300], 10)
-    fill = pygame.draw.rect(screen, "white", [x+10, y, 280, h])
+    cup = pygame.draw.rect(screen, "black", [reset["sieve_x"][1], 400, 300, 300], 10)
+    fill = pygame.draw.rect(screen, "white", [reset["sieve_x"][1]+10, reset["sieve_y"][1], 280, reset["sieve_h"][1]])
     screen.blit(complete,completerect)
     screen.blit(flour_volume_text,(1100,150))
 
     if right:
-        x += 5
+        reset["sieve_x"][1] += 5
     else:
-        x -= 5
-    if x >= 1000:
+        reset["sieve_x"][1] -= 5
+    if reset["sieve_x"][1] >= 1000:
         right = False
-    if x <= 300:
+    if reset["sieve_x"][1] <= 300:
         right = True
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_DOWN]:
         pour = True
 
-    if pour and h < 290:
-        flourfront = pygame.draw.rect(screen, "white", [flourx,rect.y + 150,flourw,800])
+    if pour and reset["sieve_h"][1] < 290:
+        flourfront = pygame.draw.rect(screen, "white", [reset["flour_front_x"][1],rect.y + 150,reset["flour_front_w"][1],800])
         flourback = pygame.draw.rect(screen, "white", [rect.x + 75,rect.y + 150,150, cup.y - rect.y + 140])
         if cup.x <= flourback.x + 150 and cup.x +300 >= flourback.x:
             if cup.x > rect.x and cup.x < rect.x + 225:
-                flourw = cup.x - rect.x - 75
-                flourx = rect.x + 75
+                reset["flour_front_w"][1] = cup.x - rect.x - 75
+                reset["flour_front_x"][1] = rect.x + 75
             elif cup.x < rect.x and cup.x +300 > rect.x + 75:
-                flourw = rect.x -75 - cup.x
-                flourx = cup.x + 300
+                reset["flour_front_w"][1] = rect.x -75 - cup.x
+                reset["flour_front_x"][1] = cup.x + 300
             else:
-                flourw = 150
-                flourx = rect.x + 75
-            h+= abs(cup.y - rect.y)/300
-            y-= abs(cup.y - rect.y)/300
+                reset["flour_front_w"][1] = 150
+                reset["flour_front_x"][1] = rect.x + 75
+            reset["sieve_h"][1]+= abs(cup.y - rect.y)/300
+            reset["sieve_y"][1]-= abs(cup.y - rect.y)/300
             core["flour"].spilled += int(abs(cup.y - rect.y)/100)
             core["flour"].achieved_value += int(abs(cup.y - rect.y)/100)
             flour_volume_text = font.render(f"Volume: {core["flour"].achieved_value}", True, "Black")
         else:
             core["flour"].spilled += 1
 
-    return x,h,y,right,flourx,flourw,flour_volume_text
+    return right,flour_volume_text
 
-def flourkeys(games,pour,played,color,r,x,y,h,w,flour_x,core):
+def flourkeys(games,pour,played,reset):
     flour_keys = pygame.key.get_pressed()
     if flour_keys[pygame.K_DOWN]:
         pour = True
@@ -848,18 +830,29 @@ def flourkeys(games,pour,played,color,r,x,y,h,w,flour_x,core):
     if event.type == pygame.MOUSEBUTTONDOWN:
         mouse_pos = event.pos
         if flour_complete_rect.collidepoint(mouse_pos):
-            color = (245, 236, 226)
-            r+= 10
+            reset["bowl_color"][1] = (245, 236, 226)
+            reset["bowl_r"][1]+= 10
             games["flour_game"] = False
             played["flour_played"] = True
             games["show_minigame"] = False
-            x = 600
-            y = 690
-            h = 0
-            w = 150
-            flour_x = sieve_rect.x + 75
-            core["flour"].spilled = 0
-    return pour,color,r,x,y,h,w,flour_x
+    return pour
+
+reset_constants = {"bowl_color": [None, None],
+                   "bowl_r": [150,150],
+                   "egg_fallen": [0,0],
+                   "milk_h": [0,0],
+                   "milk_y": [690,690],
+                   "sieve_y": [690,690],
+                   "sieve_x": [600,600],
+                   "sieve_h": [0,0],
+                   "flour_front_w": [150,150],
+                   "flour_front_x": [sieve_rect.x + 75,sieve_rect.x + 75],
+                   "SugarSalts": [[],[]],
+                   "butter_back_y": [height/2-50,height/2-50],
+                   "oven_width": [0,0],
+                   "oven_r": [255,255],
+                   "oven_g": [255,255],
+                   "oven_b": [255,255]}
 
 #Sugar minigame class
 
@@ -892,59 +885,56 @@ def sugarkeys(rect,container,bottom,left,right,top):
     basket_update(rect, bottom, left,right,top)
 
 #sugar salt lane randomization
-def sugar_salt_coordinates(sugar_salts_list):
+def sugar_salt_coordinates(reset):
     for i in range(5):
         nums = [375,width/2-37,1150]
         chosen_x = nums[randint(0,2)]
-        sugar_salts_list.append(SugarSalt(-50-(i*200),"sugar",chosen_x))
+        reset["SugarSalts"][1].append(SugarSalt(-50-(i*200),"sugar",chosen_x))
         nums.remove(chosen_x)
         chosen_x = nums[randint(0,1)]
-        sugar_salts_list.append(SugarSalt(-50-(i*200),"salt", chosen_x))
+        reset["SugarSalts"][1].append(SugarSalt(-50-(i*200),"salt", chosen_x))
 
 #sugar minigame initializations
 basket_rect.topleft = (width/2-(basket.get_width()/2),500)
-SugarSalts = []
 
-sugar_salt_coordinates(SugarSalts)
+sugar_salt_coordinates(reset_constants)
 Core_Ingredient["sugar"].achieved_value = [0,0]
 sugar_text = font.render(f"Sugar Collected: {Core_Ingredient["sugar"].achieved_value[0]}", True, "Black")
 salt_text = font.render(f"Salt Collected: {Core_Ingredient["sugar"].achieved_value[1]}", True, "Black")
 
-def sugarcontrols(sugarlist,top,left,right,games,played,core,sugarstext,saltstext,color,r):
-    for ingredient in sugarlist:
+def sugarcontrols(top,left,right,games,played,core,sugarstext,saltstext,reset):
+    for ingredient in reset["SugarSalts"][1]:
         ingredient.update()
         if ingredient.rect.colliderect(top) and ingredient.x >= left.x and ingredient.x <= right.x and ingredient.type == "sugar":        
             core["sugar"].achieved_value[0] += 1
-            sugarlist.remove(ingredient)
+            reset["SugarSalts"][1].remove(ingredient)
             sugarstext = font.render(f"Sugar Collected: {core["sugar"].achieved_value[0]}", True, "Black")
         if ingredient.rect.colliderect(top) and ingredient.x >= left.x and ingredient.x <= right.x and ingredient.type == "salt":        
-            sugarlist.remove(ingredient)
+            reset["SugarSalts"][1].remove(ingredient)
             core["sugar"].achieved_value[1] += 1
             saltstext = font.render(f"Salt Collected: {core["sugar"].achieved_value[1]}", True, "Black")
         if ingredient.rect.y >= 900:
-            sugarlist.remove(ingredient)
+            reset["SugarSalts"][1].remove(ingredient)
 
-    for ingredient in sugarlist:
+    for ingredient in reset["SugarSalts"][1]:
         ingredient.draw(screen)
     screen.blit(basket, basket_rect)
 
     screen.blit(sugarstext,(950,150))
     screen.blit(saltstext,(950,200))
 
-    if not sugarlist:
-        color = (255, 255, 255)
-        r+= 10
+    if not reset["SugarSalts"][1]:
+        reset["bowl_color"][1] = (255, 255, 255)
+        reset["bowl_r"][1] += 10
         games["sugar_game"] = False
         played["sugar_played"] = True
         games["show_minigame"] = False
-        sugarlist = []
 
-    return sugarlist,sugarstext,saltstext,color,r
+    return sugarstext,saltstext
 
 #butter game initialization
 
 Core_Ingredient["butter"].achieved_value = []
-butter_back_y = height/2-50
 fallen_butter = []
 
 #shoelace formula
@@ -957,7 +947,7 @@ def shoelace(vertices):
     return abs(total)
 
 butter_expected_total = shoelace(current_level.core_ingredients["butter"].expected_value)
-butter_back = pygame.Rect([width/2-250,butter_back_y,500,200,])
+butter_back = pygame.Rect([width/2-250,reset_constants["butter_back_y"][1],500,200,])
 butter_text = font.render(f"Current volume: 0", True, "black")
 
 def butterclicking(core,back,games,text):
@@ -969,7 +959,7 @@ def butterclicking(core,back,games,text):
     text = font.render(f"Current volume: {int(shoelace(core["butter"].achieved_value)/1000)}", True, "black")
     return text
 
-def butterdrawing(current,y,games,played,fallen,text,core,color):
+def butterdrawing(current,games,played,fallen,text,core,reset):
     for i in range(5):
         pygame.draw.line(screen, "green", (current.core_ingredients["butter"].expected_value[i%5][0],current.core_ingredients["butter"].expected_value[i%5][1]),(current.core_ingredients["butter"].expected_value[(i+1)%5][0],current.core_ingredients["butter"].expected_value[(i+1)%5][1]),10)
     for i in range(len(core["butter"].achieved_value)):
@@ -981,13 +971,13 @@ def butterdrawing(current,y,games,played,fallen,text,core,color):
         fallen = [list(x) for x in core["butter"].achieved_value]
 
     if len(core["butter"].achieved_value) == 5:
-        color = (255, 253, 116)
+        reset["bowl_color"][1] = (255, 253, 116)
         pygame.draw.polygon(screen,(200,200,200),fallen)
         pygame.draw.polygon(screen,(255, 253, 116),core["butter"].achieved_value)
         for i in range(5):
             fallen[i][1] += 5
             current.core_ingredients["butter"].expected_value[i][1] += 5
-        y += 5
+        reset["butter_back_y"][1] += 5
 
     if butter_back.y >= 900:
         games["butter_game"] = False
@@ -996,13 +986,13 @@ def butterdrawing(current,y,games,played,fallen,text,core,color):
 
     screen.blit(text,(950,150))
     
-    return y,fallen,color
+    return fallen
 
 order_texts = {}
 
-def order_recipe(texts, current, screen, games, exit):
+def order_recipe(texts, current, screen, games, buttons):
     games["show_minigame"] = True
-    exit.draw(screen)
+    buttons["exit_button"].draw(screen)
     if not games["toppings_time"]:
         texts["core"] = font.render(f"Core Ingredients:", True, "Black")
         screen.blit(texts["core"],(400,150))
@@ -1030,81 +1020,62 @@ def order_recipe(texts, current, screen, games, exit):
 #Oven initializations
 oven = pygame.image.load("assets/oven.png").convert_alpha()
 oven_rect = oven.get_rect(center = (500,450))
-startbutton = pygame.image.load("assets/startbutton.png").convert()
-startbutton_rect = startbutton.get_rect(center = (1200,450))
-stopbutton = pygame.image.load("assets/stopbutton.png").convert()
-stopbutton_rect = stopbutton.get_rect(center = (1200,450))
-oven_width = 0
-oven_r = 255
-oven_g = 255
-oven_b = 255
 
-def ovendraw(image,image_rect,r,g,b,w,startshow,start,start_rect,stop,stop_rect,next_image,current):
+def ovendraw(image,image_rect,reset,games,buttons):
     screen.fill((225, 150, 164))
     screen.blit(image,image_rect)
-    home.draw(screen)
-    oven_ready_bar = pygame.draw.rect(screen, (r,g,b),[270,111,w, 88])
-    if startshow:
-        screen.blit(start,start_rect)
-    elif oven_playing:
-        screen.blit(stop,stop_rect)
-        if w<472:
-            w += 1
-            if r > 0 and b > 0:
-                r -= 0.5
-                b -= 0.5
-        elif r < 255 and g>0:
-            r += 2
-            g -=2
+    buttons["home"].draw(screen)
+    oven_ready_bar = pygame.draw.rect(screen, (reset["oven_r"][1],reset["oven_g"][1],reset["oven_b"][1]),[270,111,reset["oven_width"][1], 88])
+    if games["startbutton_show"]:
+        buttons["startbutton"].draw(screen)
+    elif games["oven_playing"]:
+        buttons["stopbutton"].draw(screen)
+        if reset["oven_width"][1]<472:
+            reset["oven_width"][1] += 1
+            if reset["oven_r"][1] > 0 and reset["oven_b"][1] > 0:
+                reset["oven_r"][1] -= 0.5
+                reset["oven_b"][1] -= 0.5
+        elif reset["oven_r"][1] < 255 and reset["oven_g"][1]>0:
+            reset["oven_r"][1] += 2
+            reset["oven_g"][1] -=2
     else:
-        next_image.draw(screen)
-    current.baked = r
-    return r,g,b,w
+        buttons["next"].draw(screen)
 
-def ovenclicking(games,played,startshow,start,playing,r,g,b):
+def ovenclicking(games,played,buttons):
     if event.type == pygame.MOUSEBUTTONDOWN:
-        mouse_pos = event.pos
 
-        if start.collidepoint(mouse_pos) and not played["oven_played"] and startshow:
+        if buttons["startbutton"].is_clicked(event) and not played["oven_played"] and games["startbutton_show"]:
             games["clicked_button"] = True
-            startshow = False
-            playing = True
+            games["startbutton_show"] = False
+            games["oven_playing"] = True
         
-        elif stopbutton_rect.collidepoint(mouse_pos) and playing and not games["clicked_button"]:
+        elif buttons["stopbutton"].is_clicked(event) and games["oven_playing"] and not games["clicked_button"]:
             played["oven_played"] = True
-            playing = False
-            r = 255
-            g = 255
-            b = 255
+            games["oven_playing"] = False
 
     if event.type == pygame.MOUSEBUTTONUP:
-        mouse_pos = event.pos
-        if start.collidepoint(mouse_pos):
+        if buttons["startbutton"].is_clicked_up(event):
             games["clicked_button"] = False
 
-    return startshow,playing,r,g,b
-
-def nextclicking(next_button, games, played, current, level_list, startshow,completed_list,add,top,core,bowl,width):
-    if next_button.is_clicked(event) and not games["clicked_button"]and not games["show_shop"]:
+def nextclicking(games, played, current,level_list,completed_list,add,top,core,reset,buttons):
+    if buttons["next"].is_clicked(event) and not games["clicked_button"]and not games["show_shop"]:
         games["clicked_button"] = True
         if not played["oven_played"]:
                 games["oven_game"] = True
-                startshow = True
+                games["startbutton_show"] = True
         elif played["oven_played"] and not games["toppings_time"]:
             games["toppings_time"] = True
             games["oven_game"] = False
         elif games["toppings_time"]:
             if not games["finished_screen"]:
                 games["finished_screen"] = True
-                return current,level_list,startshow,bowl,width
+                return current,level_list
             completed_list[len(completed_list)] = current
             level_list = addlevel(level_list,completed_list,add,top,Core_Ingredient)
             current = level_list[len(completed_list)]
             games["toppings_time"] = False
             played["oven_played"] = False
-            own = False
-            width = 0
-            own = exitclicked(games,shop_button, own)
+            exitclicked(games,buttons)
             for name,item in core.items():
                 item.achieved_value = 0
                 if name == "butter":
@@ -1118,13 +1089,14 @@ def nextclicking(next_button, games, played, current, level_list, startshow,comp
                 item.added = False
             for name,value in played.items():
                 played[name] = False
-            return current,level_list,startshow,bowl,width
-        bowl = None
+            for name, value in reset.items():
+                reset[name][1] = reset[name][0]
+            return current,level_list
 
-    if next_button.is_clicked_up(event):
+    if buttons["next"].is_clicked_up(event):
         games["clicked_button"] = False
 
-    return current,level_list,startshow,bowl,width
+    return current,level_list
 
 #boolean initializations
 Games = {"eggs_game": False,
@@ -1145,7 +1117,12 @@ Games = {"eggs_game": False,
          "add_icing": False,
          "added_icing": False,
          "show_shop": False,
-         "added_price": False
+         "added_price": False,
+         "show_home": True,
+         "level_playing": False,
+         "oven_playing": False,
+         "startbutton_show": False,
+         "not_owned_mini": False
          }
 
 Played = {"eggs_played": False,
@@ -1155,10 +1132,7 @@ Played = {"eggs_played": False,
           "butter_played": False,
           "oven_played": False}
 
-show_home = True
-level_playing = False
-oven_playing = False
-startbutton_show = False
+
 running = True
 #game loop
 while running:
@@ -1166,29 +1140,28 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        if show_home:
-
-            level_playing, current_level = level_clicking(level_button,event,Games,levels,level_playing,current_level,play_button,tutorial_button)
-            shop_clicking(shop_button,Games,next_left, next_right)
+        if Games["show_home"]:
+            current_level = level_clicking(event,Games,levels,current_level,Buttons)
+            shop_clicking(shop_button,Games,Buttons)
 
         if exit_button.is_clicked(event):
-            not_owned_mini = exitclicked(Games,shop_button, not_owned_mini)
+            exitclicked(Games,Buttons)
 
-        if home.is_clicked(event):
-                    show_home, level_playing, oven_game, Played, bowl_color, oven_width = HomeReturn(oven, show_home, level_playing, Core_Ingredient, Add_Ins, Toppings,Games,Played,shop_button,bowl_color,oven_width)
+        if Buttons["home"].is_clicked(event):
+            HomeReturn(Core_Ingredient, Add_Ins, Toppings,Games,Played,reset_constants,Buttons)
 
-        if level_playing:
+        if Games["level_playing"]:
             #controls key in sugar game
             if Games["sugar_game"]:
                 sugarkeys(basket_rect,basket,basket_bottom,basket_left,basket_right,basket_top)
 
             #control keys in flour game
-            flour_pour,bowl_color,bowl_r,sieve_x,sieve_y,sieve_h,flour_front_w,flour_front_x = flourkeys(Games,flour_pour,Played,bowl_color,bowl_r,sieve_x,sieve_y,sieve_h,flour_front_w,flour_front_x,Core_Ingredient)
+            flour_pour = flourkeys(Games,flour_pour,Played,reset_constants)
             
             if event.type == pygame.MOUSEBUTTONDOWN:
 
                 if Games["toppings_time"]:
-                    not_owned_mini = topclicking(Toppings, Games,not_owned_mini)
+                    topclicking(Toppings, Games)
 
                 if Games["milk_game"]:
                     milkclicking(milk_can)
@@ -1197,7 +1170,7 @@ while running:
                     butter_text = butterclicking(Core_Ingredient,butter_back,Games,butter_text)
 
                 elif not Games["toppings_time"]:
-                    not_owned_mini, bowl_color = addclicking(Add_Ins, Games,not_owned_mini,bowl_color)
+                    addclicking(Add_Ins, Games,reset_constants)
 
                 #if ingredients have been clicked then minigame gets shown
                 for name, item in Core_Ingredient.items():
@@ -1205,6 +1178,8 @@ while running:
                         Games["show_minigame"] = True
                         if not Played[f"{name}_played"]:
                             Games[f"{name}_game"] = True
+                            if name == "sugar":
+                                sugar_salt_coordinates(reset_constants)
                         if name == "sugar":
                                 basket_rect.topleft = (width/2-(basket.get_width()/2),500)
                         elif Played[f"{name}_played"]:
@@ -1217,55 +1192,55 @@ while running:
             if exit_button.is_clicked_up:
                 Games["clicked_button"] = False 
 
-        startbutton_show,oven_playing,oven_r,oven_g,oven_b = ovenclicking(Games,Played,startbutton_show,startbutton_rect,oven_playing,oven_r,oven_g,oven_b)
+        ovenclicking(Games,Played,Buttons)
 
-    if show_home:
-        Money,balance_text = homescreen(level_button, shop_button, play_button, tutorial_button, Games, minigame, minigame_rect, exit_button,levels,Add_Ins,Toppings,next_left,next_right,Money,balance_text)
+    if Games["show_home"]:
+        Money,balance_text = homescreen(Games, minigame, minigame_rect,levels,Add_Ins,Toppings,Money,balance_text,Buttons)
 
-    if level_playing:
+    if Games["level_playing"]:
         if not Games["toppings_time"]:
             screen.blit(background, (0,0))
             next.draw(screen)
-            HomeButton(home, Games)
+            HomeButton(Buttons, Games)
             for name, item in Core_Ingredient.items():
                 item.draw(screen)
 
-            if bowl_color:
-                pygame.draw.circle(screen,bowl_color, (800,580), bowl_r)
+            if reset_constants["bowl_color"][1]:
+                pygame.draw.circle(screen,reset_constants["bowl_color"][1], (800,580), reset_constants["bowl_r"][1])
 
             for name, item in Add_Ins.items():
                 item.draw(screen)
                 item.not_owned(screen)
 
             current_level.order.draw(screen)
-            current_level,levels,startbutton_show,bowl_color,oven_width = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color,oven_width)
+            current_level,levels = nextclicking(Games, Played, current_level, levels,completed_levels,Add_Ins,Toppings,Core_Ingredient,reset_constants,Buttons)
 
             if Games["show_minigame"]:
                 screen.blit(minigame,minigame_rect)
                 exit_button.draw(screen)
-                if not_owned_mini:
+                if Games["not_owned_mini"]:
                     screen.blit(not_owned_text, (550,440))
 
             if Games["order_open"]:
-                order_texts = order_recipe(order_texts, current_level, screen, Games, exit_button) 
+                order_texts = order_recipe(order_texts, current_level, screen, Games, Buttons) 
 
             #egg minigame
             if Games["eggs_game"]:
                 eggcontrols(basket,basket_rect,minigame_rect,basket_bottom,basket_left,basket_right,basket_top,eggs)
-                egg_fallen,egg_text,bowl_color,bowl_r = egg_collisions(eggs,basket_left,basket_right,basket_bottom,basket_top,height,Core_Ingredient,egg_fallen,Games,Played,egg_text,bowl_color,bowl_r)
+                egg_text = egg_collisions(eggs,basket_left,basket_right,basket_bottom,basket_top,height,Core_Ingredient,Games,Played,egg_text,reset_constants)
 
             if Games["milk_game"]:
-                milk_h,milk_y,milk_text,bowl_color,bowl_r = milk_game_controls(milk_can,milk_h,milk_y,Core_Ingredient,Games,Played,milk_text,bowl_color,bowl_r)
+                milk_text = milk_game_controls(milk_can,Core_Ingredient,Games,Played,milk_text,reset_constants)
 
             if Games["flour_game"]:
-                sieve_x,sieve_h,sieve_y,flour_right,flour_front_x,flour_front_w,flour_text = flourfalling(flour_right,sieve_x,flour_pour,sieve_h,flour_front_x,flour_front_w,sieve_rect,sieve_y,Core_Ingredient,sieve,sieve_rect,flour_complete,flour_complete_rect,flour_text)
+                flour_right,flour_text = flourfalling(flour_right,flour_pour,sieve_rect,Core_Ingredient,sieve,sieve_rect,flour_complete,flour_complete_rect,flour_text,reset_constants)
 
             if Games["sugar_game"]:
-                SugarSalts,sugar_text,salt_text,bowl_color,bowl_r = sugarcontrols(SugarSalts,basket_top,basket_left,basket_right,Games,Played,Core_Ingredient,sugar_text,salt_text,bowl_color,bowl_r)
+                sugar_text,salt_text = sugarcontrols(basket_top,basket_left,basket_right,Games,Played,Core_Ingredient,sugar_text,salt_text,reset_constants)
 
             if Games["butter_game"]:
-                butter_back = pygame.draw.rect(screen, (255, 253, 116), [width/2-250,butter_back_y,500,200,])
-                butter_back_y,fallen_butter,bowl_color = butterdrawing(current_level,butter_back_y,Games,Played,fallen_butter,butter_text,Core_Ingredient,bowl_color)
+                butter_back = pygame.draw.rect(screen, (255, 253, 116), [width/2-250,reset_constants["butter_back_y"][1],500,200,])
+                fallen_butter = butterdrawing(current_level,Games,Played,fallen_butter,butter_text,Core_Ingredient,reset_constants)
             
             if Games["add_coloring"]:
                 choosecolor(Color_Buttons,Games,Add_Ins,cookies)
@@ -1274,11 +1249,11 @@ while running:
                 screen.blit(already_played_text, (680,440))
 
             if Games["oven_game"]:
-                oven_r,oven_g,oven_b,oven_width= ovendraw(oven,oven_rect,oven_r,oven_g,oven_b,oven_width,startbutton_show,startbutton,startbutton_rect,stopbutton,stopbutton_rect,next,current_level)
-                current_level,levels,startbutton_show,bowl_color,oven_width = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color,oven_width)
-                HomeButton(home, Games)
+                ovendraw(oven,oven_rect,reset_constants,Games,Buttons)
+                current_level,levels = nextclicking(Games, Played, current_level, levels,completed_levels,Add_Ins,Toppings,Core_Ingredient,reset_constants,Buttons)
+                HomeButton(Buttons, Games)
 
-            add_top_draw(Add_Ins,Toppings,Games,not_owned_mini,not_owned_text)
+            add_top_draw(Add_Ins,Toppings,Games)
 
         elif Games["toppings_time"]:
             screen.blit(traybackground, (0,0))
@@ -1291,18 +1266,18 @@ while running:
             if Games["show_minigame"]:
                 screen.blit(minigame,minigame_rect)
                 exit_button.draw(screen)
-                if not_owned_mini:
+                if Games["not_owned_mini"]:
                     screen.blit(not_owned_text, (550,440))
             if Games["order_open"]:
-                order_texts = order_recipe(order_texts, current_level, screen, Games, exit_button) 
-            HomeButton(home, Games)
-            add_top_draw(Add_Ins,Toppings,Games,not_owned_mini,not_owned_text)
+                order_texts = order_recipe(order_texts, current_level, screen, Games, Buttons) 
+            HomeButton(Buttons, Games)
+            add_top_draw(Add_Ins,Toppings,Games)
             if Games["add_icing"]:
-                chooseicing(Color_Buttons,Games,Toppings,exit_button)
-            current_level,levels,startbutton_show,bowl_color,oven_width = nextclicking(next, Games, Played, current_level, levels, startbutton_show,completed_levels,Add_Ins,Toppings,Core_Ingredient,bowl_color,oven_width)
+                chooseicing(Color_Buttons,Games,Toppings)
+            current_level,levels = nextclicking(Games, Played, current_level, levels,completed_levels,Add_Ins,Toppings,Core_Ingredient,reset_constants,Buttons)
             if Games["finished_screen"]:
                 screen.blit(minigame,minigame_rect)
-                Money = compare_results(current_level,Core_Ingredient,Add_Ins,Toppings,oven_r, Money,Games)
+                Money = compare_results(current_level,Core_Ingredient,Add_Ins,Toppings, Money,Games,reset_constants)
 
 
     pygame.display.flip()
