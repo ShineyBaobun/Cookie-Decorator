@@ -1143,8 +1143,8 @@ def flourfalling(right,pour,core,image,imagerect,complete,completerect,flour_vol
     :param reset: dictionary of values
     """
     screen.blit(image,imagerect)
-    cup = pygame.draw.imagerect(screen, "black", [reset["sieve_x"][1], 400, 300, 300], 10)
-    fill = pygame.draw.imagerect(screen, "white", [reset["sieve_x"][1]+10, reset["sieve_y"][1], 280, reset["sieve_h"][1]])
+    cup = pygame.draw.rect(screen, "black", [reset["sieve_x"][1], 400, 300, 300], 10)
+    fill = pygame.draw.rect(screen, "white", [reset["sieve_x"][1]+10, reset["sieve_y"][1], 280, reset["sieve_h"][1]])
     screen.blit(complete,completerect)
     screen.blit(flour_volume_text,(1100,150))
 
@@ -1162,8 +1162,8 @@ def flourfalling(right,pour,core,image,imagerect,complete,completerect,flour_vol
         pour = True
 
     if pour and reset["sieve_h"][1] < 290:
-        flourfront = pygame.draw.imagerect(screen, "white", [reset["flour_front_x"][1],imagerect.y + 150,reset["flour_front_w"][1],800])
-        flourback = pygame.draw.imagerect(screen, "white", [imagerect.x + 75,imagerect.y + 150,150, cup.y - imagerect.y + 140])
+        flourfront = pygame.draw.rect(screen, "white", [reset["flour_front_x"][1],imagerect.y + 150,reset["flour_front_w"][1],800])
+        flourback = pygame.draw.rect(screen, "white", [imagerect.x + 75,imagerect.y + 150,150, cup.y - imagerect.y + 140])
         if cup.x <= flourback.x + 150 and cup.x +300 >= flourback.x:
             if cup.x > imagerect.x and cup.x < imagerect.x + 225:
                 reset["flour_front_w"][1] = cup.x - imagerect.x - 75
