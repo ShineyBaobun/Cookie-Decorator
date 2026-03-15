@@ -433,7 +433,7 @@ class SugarSalt:
         
         :param self: allows class attributes to be accessed
         """
-        self.rect.y += 3
+        self.rect.y += 4
 
 def HomeButton(buttons, game):
     """
@@ -637,6 +637,8 @@ def homescreen(games, miniimage, minirect,leveldict,adds,tops,coins,coinstext,bu
                         if coins>=add.cost:
                             coins -= add.cost
                             add.owned = True
+                            if tops[name]:
+                                tops[name].owned = True
                             coinstext = font.render(f"Balance: {coins}", True, "Black")
                 if add.owned:
                     screen.blit(add.no_buy_photo,add.no_buy_rect)
@@ -974,6 +976,7 @@ def compare_results(current,core,adds,tops,value,games,reset):
     for add,ingredient in adds.items():
         if ingredient.added:
             price += int(ingredient.cost * (current.stars*2/100))
+    price = int(price*(1+(current.stars-1)/10))
     star_text = font.render(f"{current.stars} Stars! Press next to continue!", True,(0,0,0))
     price_text = font.render(f"You've earned ${price}", True, (0,0,0))
     lost_text = font.render(f"You've lost stars because:", True, (0,0,0))
@@ -1232,13 +1235,14 @@ def sugar_salt_coordinates(reset):
     
     :param reset: dictionary of values
     """
+    reset["SugarSalts"][1] = []
     for i in range(5):
         nums = [375,width/2-37,1150]
         chosen_x = nums[randint(0,2)]
-        reset["SugarSalts"][1].append(SugarSalt(-50-(i*200),"sugar",chosen_x))
+        reset["SugarSalts"][1].append(SugarSalt(-50-(i*300),"sugar",chosen_x))
         nums.remove(chosen_x)
         chosen_x = nums[randint(0,1)]
-        reset["SugarSalts"][1].append(SugarSalt(-50-(i*200),"salt", chosen_x))
+        reset["SugarSalts"][1].append(SugarSalt(-50-(i*300),"salt", chosen_x))
 
 def sugarcontrols(top,left,right,games,played,core,sugarstext,saltstext,reset):
     """
