@@ -591,9 +591,9 @@ def tutorial_process(games,played,adds,tops):
         if not played["order_opened"] and not games["show_minigame"]:
             tutorial_instructions(280,200,"View order to see what toppings to add",0)
         if played["order_opened"] and not games["added_icing"] and not games["show_minigame"]:
-            tutorial_instructions(0,450,"Add food coloring",-58)
+            tutorial_instructions(0,450,"Add icing",-58)
         if games["add_icing"] and games["show_minigame"]:
-            tutorial_instructions(470,520,"Add red food coloring",-58)
+            tutorial_instructions(470,520,"Add red icing",-58)
 
 def homescreen(games, miniimage, minirect,leveldict,adds,tops,coins,coinstext,buttons):
     """
@@ -871,6 +871,7 @@ def add_top_draw(adds,tops,games):
         for name, item in tops.items():
             if item.added:
                 screen.blit(item.show_img, (0,0))
+                games["not_owned_mini"] = False
             if games["not_owned_mini"]:
                 games["show_minigame"] = True
 
