@@ -942,7 +942,7 @@ def compare_results(current,core,adds,tops,value,games,reset):
                     wrong.add('*Incorrect value of ingredients added')
                 if core[name].achieved_value[1] > 0:
                     wrong.add('Salt was incorrectly added')
-            else:
+            elif name =="milk" or name =="flour":
                 if core[name].achieved_value > item.expected_value +20 or core[name].achieved_value < item.expected_value -20:
                     wrong.add('*Incorrect value of ingredients added')
         for name,item in current.add_ins.items():
