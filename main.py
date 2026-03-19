@@ -11,6 +11,8 @@ width = 1600
 height = 900
 
 screen = pygame.display.set_mode((width, height))
+logo = pygame.image.load('assets/logo.png').convert_alpha()
+logo = pygame.transform.scale(logo, (513,242))
 font = pygame.font.Font("assets/PixelFont.otf", 20)
 Money = 100000
 
@@ -612,6 +614,7 @@ def homescreen(games, miniimage, minirect,leveldict,adds,tops,coins,coinstext,bu
     :param buttons: dictionary of buttons
     """
     screen.fill((225, 150, 164))
+    screen.blit(logo,(width/2-265,75))
     buttons["level_button"].draw(screen)
     buttons["shop_button"].draw(screen)
     buttons["play_button"].draw(screen)
@@ -990,13 +993,13 @@ def compare_results(current,core,adds,tops,value,games,reset):
     star_text = font.render(f"{current.stars} Stars! Press next to continue!", True,(0,0,0))
     price_text = font.render(f"You've earned ${price}", True, (0,0,0))
     lost_text = font.render(f"You've lost stars because:", True, (0,0,0))
-    screen.blit(star_text,(400,300))
-    screen.blit(price_text,(400,350))
+    screen.blit(star_text,(400,200))
+    screen.blit(price_text,(400,250))
     if len(wrong)>0:
-        screen.blit(lost_text,(400,400))
+        screen.blit(lost_text,(400,350))
         for i in range(len(wrong)):
             text = font.render(wrong[i], True, (0,0,0))
-            screen.blit(text,(400,450+50*i))
+            screen.blit(text,(400,400+50*i))
     if not games["added_price"]:
         value += price
         games["added_price"] = True
