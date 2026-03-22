@@ -16,11 +16,11 @@ class SugarSalt:
         self.y = y
         self.type = type
         if self.type == "sugar":
-            self.original_image = pygame.image.load('assets/sugarimage.webp').convert_alpha()
+            self.original_image = pygame.image.load('assets/sugarimage.png').convert_alpha()
             self.image = pygame.transform.scale(self.original_image, (75,75))
             self.rect = self.image.get_rect(topleft=(self.x, self.y))
         if self.type == "salt":
-            self.original_image = pygame.image.load('assets/salt.jpg').convert_alpha()
+            self.original_image = pygame.image.load('assets/salt.png').convert_alpha()
             self.image = pygame.transform.scale(self.original_image, (75,100))
             self.rect = self.image.get_rect(topleft=(self.x, self.y))
         
